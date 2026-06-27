@@ -74,6 +74,7 @@ which upload-bq-dataset
 # should point into your pyenv, e.g. ~/.pyenv/versions/.../bin/upload-bq-dataset
 
 # 4. Drop old table (needed if schema changed) and upload
+python -m upload_bq_dataset.cli config set --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset
 bq rm -f -t einsk5g-dataplatform-prd:anatoli_temp_dataset.test
 python -m upload_bq_dataset.cli tests/test_comma.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
 ```
