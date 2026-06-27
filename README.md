@@ -2,87 +2,84 @@
 
 Upload a local CSV file to BigQuery using the `bq` CLI and your existing `gcloud` authentication.
 
+## Why a dedicated CLI tool?
+
+Out of the box, Google's `bq` CLI tool can't create a table with column names from a CSV file.
+
+`bqcsv` fixes that:
+
+* it first detects the schema
+* creates a table with proper column names and types
+* finally, it uses `bq load` to upload the CSV file
+
+## Authentication
+
+No additional authentication needed.
+
+`bqcsv` uses your existing authentication via `gcloud auth login`.
+
 ## Requirements
 
 - Python 3.10+
 - [Google Cloud SDK](https://cloud.google.com/sdk) with `bq` on your `PATH`
-- An authenticated account: `gcloud auth login`
 
-## Install
+## How to use `bqcsv`
+
+### How to upload a CSV file to a table
+
+To upload a table, you need to specify your project ID, dataset ID and a table name:
 
 ```bash
-pip install -e .
+bqcsv data.csv --project my-gcp-project --dataset staging --table events_raw
 ```
 
-## Configure defaults
+The `--table` argument is optional. `bqcsv` will derive table name from the CSV file by default:
 
-Defaults are stored in `~/.config/bqcsv/config.toml`.
+```bash
+bqcsv data.csv --project my-gcp-project --dataset staging
+
+# is identical to
+
+bqcsv data.csv --project my-gcp-project --dataset staging --table data
+```
+
+### Saving your configuration
+
+To avoid always passing `--project`, `--dataset` or `--table` options, you can save them to your local config:
 
 ```bash
 bqcsv config set --project my-gcp-project --dataset analytics --table events
 bqcsv config show
 ```
 
-## Upload
+Defaults are stored in `~/.config/bqcsv/config.toml`.
+
+After you set your defaults, you can call `bqcsv` without params:
 
 ```bash
-# Uses saved defaults
 bqcsv data.csv
-
-# Override any default
-bqcsv data.csv --project my-gcp-project --dataset staging --table events_raw
-
-# Replace table contents instead of appending
-bqcsv data.csv --replace
-
-# CSV without a header row
-bqcsv data.csv --no-header
-
-# Provide an explicit JSON schema file
-bqcsv data.csv --schema schema.json
 ```
 
-`--project`, `--dataset`, and `--table` can each be set in config or passed on the command line.
+If you haven't set your default `--table` value, the table name will be derived from the CSV file.
 
-## Testing
+## Development
 
-Upload a test CSV:
+### How to install `bqcsv` from your local repo
 
-```
-bqcsv test.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test
-```
-
-Delete a test table:
-
-```
-bq rm -f -t  einsk5g-dataplatform-prd:anatoli_temp_dataset.test
-```
-
-Full command to re-install and re-upload:
-
-```sh
-cd /path/to/bqcsv
-
-# 1. Reinstall (editable install links to source; run again after entry-point changes)
+```bash
 pip install -e .
-
-# 2. If you use pyenv, refresh shims so the shell finds the script
-pyenv rehash
-
-# 3. Verify you're running the local install
-which bqcsv
-# should point into your pyenv, e.g. ~/.pyenv/versions/.../bin/bqcsv
-
-# 4. Drop old table (needed if schema changed) and upload
-python -m bqcsv.cli config set --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset
-bq rm -f -t einsk5g-dataplatform-prd:anatoli_temp_dataset.test
-python -m bqcsv.cli tests/test_comma.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
 ```
 
-With `pip install -e .`, code edits under `bqcsv/` are picked up immediately — you do **not** need to reinstall after every change unless you modify `pyproject.toml` entry points.
+### Testing
 
-If the shell still runs an old version, bypass the shim:
+To delete a test table, use `bq`:
+
+```bash
+bq rm -f -t  PROJECT_ID:DATASET_ID.TABLE_NAME
+```
+
+You can call Python script directly when working on a new feature of fixing a bug:
 
 ```sh
-python -m bqcsv.cli tests/test_comma.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
+python -m bqcsv.cli config set --project PROJECT_ID --dataset DATASET_ID --table TEST_TABLE_NAME
 ```
