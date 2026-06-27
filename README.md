@@ -88,7 +88,7 @@ python -m bqcsv.cli config set --project PROJECT_ID --dataset DATASET_ID --table
 
 1. **Bump the version** in both places (they must match):
    - `pyproject.toml` → `[project].version`
-   - `bqcsv/__init__.py` → `__version__`
+   - `src/__init__.py` → `__version__`
 
 2. **Install build tools** (one-time):
 

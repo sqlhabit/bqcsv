@@ -16,6 +16,8 @@ dependencies = [
 [project.scripts]
 bqcsv = "bqcsv.cli:main"
 
-[tool.setuptools.packages.find]
-where = ["."]
-include = ["bqcsv*"]
+[tool.setuptools]
+packages = ["bqcsv"]
+
+[tool.setuptools.package-dir]
+bqcsv = "src"
