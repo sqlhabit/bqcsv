@@ -4,17 +4,17 @@ Upload a local CSV file to BigQuery using the `bq` CLI and your existing `gcloud
 
 ## Why a dedicated CLI tool?
 
-Out of the box, Google's `bq` CLI tool can't create a table with column names from a CSV file.
+Out of the box, Google's `bq` CLI cannot create a table with column names inferred from a CSV file.
 
 `bqcsv` fixes that:
 
-* it first detects the schema
+* detects the schema from the CSV file
 * creates a table with proper column names and types
-* finally, it uses `bq load` to upload the CSV file
+* loads the CSV file using `bq load`
 
 ## Authentication
 
-No additional authentication needed.
+No additional authentication is needed.
 
 `bqcsv` uses your existing authentication via `gcloud auth login`.
 
@@ -25,15 +25,15 @@ No additional authentication needed.
 
 ## How to use `bqcsv`
 
-### How to upload a CSV file to a table
+### Upload a CSV file to a table
 
-To upload a table, you need to specify your project ID, dataset ID and a table name:
+To upload a CSV file, specify your project ID, dataset ID, and table name:
 
 ```bash
 bqcsv data.csv --project my-gcp-project --dataset staging --table events_raw
 ```
 
-The `--table` argument is optional. `bqcsv` will derive table name from the CSV file by default:
+The `--table` argument is optional. By default, `bqcsv` derives the table name from the CSV file:
 
 ```bash
 bqcsv data.csv --project my-gcp-project --dataset staging
@@ -45,7 +45,7 @@ bqcsv data.csv --project my-gcp-project --dataset staging --table data
 
 ### Saving your configuration
 
-To avoid always passing `--project`, `--dataset` or `--table` options, you can save them to your local config:
+To avoid passing `--project`, `--dataset`, or `--table` on every run, save them to your local config:
 
 ```bash
 bqcsv config set --project my-gcp-project --dataset analytics --table events
@@ -54,17 +54,17 @@ bqcsv config show
 
 Defaults are stored in `~/.config/bqcsv/config.toml`.
 
-After you set your defaults, you can call `bqcsv` without params:
+After you set your defaults, you can call `bqcsv` without arguments:
 
 ```bash
 bqcsv data.csv
 ```
 
-If you haven't set your default `--table` value, the table name will be derived from the CSV file.
+If you have not set a default `--table` value, the table name is derived from the CSV file.
 
 ## Development
 
-### How to install `bqcsv` from your local repo
+### Install from your local repo
 
 ```bash
 pip install -e .
@@ -78,7 +78,7 @@ To delete a test table, use `bq`:
 bq rm -f -t  PROJECT_ID:DATASET_ID.TABLE_NAME
 ```
 
-You can call Python script directly when working on a new feature of fixing a bug:
+You can run the module directly when working on a new feature or fixing a bug:
 
 ```sh
 python -m bqcsv.cli config set --project PROJECT_ID --dataset DATASET_ID --table TEST_TABLE_NAME
