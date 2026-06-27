@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "upload-bq-dataset"
+version = "0.1.0"
+description = "Upload a local CSV file to a BigQuery table via the bq CLI"
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "google-cloud-bigquery>=3.0",
+    "pandas>=2.0",
+]
+
+[project.scripts]
+upload-bq-dataset = "upload_bq_dataset.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["upload_bq_dataset*"]
