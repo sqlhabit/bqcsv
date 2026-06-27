@@ -5,7 +5,7 @@ import tomllib
 from pathlib import Path
 from typing import Any
 
-CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "upload_bq_dataset"
+CONFIG_DIR = Path(os.environ.get("XDG_CONFIG_HOME", Path.home() / ".config")) / "bqcsv"
 CONFIG_PATH = CONFIG_DIR / "config.toml"
 
 CONFIG_KEYS = ("project", "dataset", "table")

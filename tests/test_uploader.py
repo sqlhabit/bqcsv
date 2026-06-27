@@ -2,7 +2,7 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from upload_bq_dataset.uploader import (
+from bqcsv.uploader import (
     _format_dataframe_for_bq_load,
     _read_csv_dataframe,
     build_load_command,

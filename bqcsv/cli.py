@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from upload_bq_dataset.config import (
+from bqcsv.config import (
     CONFIG_KEYS,
     CONFIG_PATH,
     load_config,
@@ -13,12 +13,12 @@ from upload_bq_dataset.config import (
     save_config,
     unset_config,
 )
-from upload_bq_dataset.uploader import upload_csv
+from bqcsv.uploader import upload_csv
 
 
 def _upload_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        prog="upload-bq-dataset",
+        prog="bqcsv",
         description="Upload a local CSV file to BigQuery using the authenticated `bq` CLI.",
     )
     parser.add_argument("csv_path", type=Path, help="Path to the local CSV file to upload")
@@ -53,7 +53,7 @@ def _upload_parser() -> argparse.ArgumentParser:
 
 
 def _config_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(prog="upload-bq-dataset config")
+    parser = argparse.ArgumentParser(prog="bqcsv config")
     subparsers = parser.add_subparsers(dest="config_command", required=True)
 
     show_parser = subparsers.add_parser("show", help="Show saved defaults")
@@ -118,7 +118,7 @@ def _run_upload(argv: list[str]) -> int:
         names = ", ".join(f"--{name}" for name in missing)
         logs.append(
             f"Missing required setting(s): {names}. "
-            f"Set them on the command line or via `upload-bq-dataset config set`."
+            f"Set them on the command line or via `bqcsv config set`."
         )
         _emit_upload_result(output=args.output, logs=logs, status="error")
         return 2

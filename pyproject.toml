@@ -3,7 +3,7 @@ requires = ["setuptools>=61"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "upload-bq-dataset"
+name = "bqcsv"
 version = "0.1.0"
 description = "Upload a local CSV file to a BigQuery table via the bq CLI"
 readme = "README.md"
@@ -14,8 +14,8 @@ dependencies = [
 ]
 
 [project.scripts]
-upload-bq-dataset = "upload_bq_dataset.cli:main"
+bqcsv = "bqcsv.cli:main"
 
 [tool.setuptools.packages.find]
 where = ["."]
-include = ["upload_bq_dataset*"]
+include = ["bqcsv*"]
