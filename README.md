@@ -75,8 +75,7 @@ which upload-bq-dataset
 
 # 4. Drop old table (needed if schema changed) and upload
 bq rm -f -t einsk5g-dataplatform-prd:anatoli_temp_dataset.test
-# upload-bq-dataset test.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
-python -m upload_bq_dataset.cli test.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
+python -m upload_bq_dataset.cli tests/test.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
 ```
 
 With `pip install -e .`, code edits under `upload_bq_dataset/` are picked up immediately — you do **not** need to reinstall after every change unless you modify `pyproject.toml` entry points.
