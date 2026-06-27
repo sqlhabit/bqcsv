@@ -83,5 +83,5 @@ With `pip install -e .`, code edits under `upload_bq_dataset/` are picked up imm
 If the shell still runs an old version, bypass the shim:
 
 ```sh
-python -m upload_bq_dataset.cli test.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
+python -m upload_bq_dataset.cli tests/test_comma.csv --project einsk5g-dataplatform-prd --dataset anatoli_temp_dataset --table test --replace
 ```

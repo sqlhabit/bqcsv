@@ -23,7 +23,10 @@ def _upload_parser() -> argparse.ArgumentParser:
     parser.add_argument("csv_path", type=Path, help="Path to the local CSV file to upload")
     parser.add_argument("--project", help="GCP project ID (overrides config)")
     parser.add_argument("--dataset", help="BigQuery dataset ID (overrides config)")
-    parser.add_argument("--table", help="BigQuery table ID (overrides config)")
+    parser.add_argument(
+        "--table",
+        help="BigQuery table ID (overrides config; defaults to the CSV file name without extension)",
+    )
     parser.add_argument(
         "--replace",
         action="store_true",
@@ -64,16 +67,28 @@ def _config_parser() -> argparse.ArgumentParser:
     return parser
 
 
+def resolve_table_name(
+    csv_path: Path,
+    cli_table: str | None,
+    config: dict[str, str],
+) -> str:
+    table = resolve_setting(cli_table, config, "table")
+    if table:
+        return table
+    return csv_path.expanduser().resolve().stem
+
+
 def _run_upload(argv: list[str]) -> int:
     args = _upload_parser().parse_args(argv)
     config = load_config()
+    csv_path = args.csv_path.expanduser().resolve()
     project = resolve_setting(args.project, config, "project")
     dataset = resolve_setting(args.dataset, config, "dataset")
-    table = resolve_setting(args.table, config, "table")
+    table = resolve_table_name(csv_path, args.table, config)
 
     missing = [
         name
-        for name, value in (("project", project), ("dataset", dataset), ("table", table))
+        for name, value in (("project", project), ("dataset", dataset))
         if not value
     ]
     if missing:
@@ -87,7 +102,7 @@ def _run_upload(argv: list[str]) -> int:
 
     try:
         upload_csv(
-            args.csv_path.expanduser().resolve(),
+            csv_path,
             project=project,
             dataset=dataset,
             table=table,
