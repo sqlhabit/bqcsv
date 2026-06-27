@@ -83,3 +83,46 @@ You can run the module directly when working on a new feature or fixing a bug:
 ```sh
 python -m bqcsv.cli config set --project PROJECT_ID --dataset DATASET_ID --table TEST_TABLE_NAME
 ```
+
+## Releasing to PyPI
+
+1. **Bump the version** in both places (they must match):
+   - `pyproject.toml` → `[project].version`
+   - `bqcsv/__init__.py` → `__version__`
+
+2. **Install build tools** (one-time):
+
+   ```bash
+   pip install build twine
+   ```
+
+3. **Run tests** and commit the version bump.
+
+4. **Build the package**:
+
+   ```bash
+   python -m build
+   ```
+
+   This creates `dist/bqcsv-<version>.tar.gz` and `dist/bqcsv-<version>-py3-none-any.whl`.
+
+5. **Upload to PyPI**:
+
+   ```bash
+   twine upload dist/*
+   ```
+
+   On first upload, create an account at [pypi.org](https://pypi.org) and use an [API token](https://pypi.org/help/#apitoken) as the password (`__token__` as the username).
+
+6. **Tag the release** (optional but recommended):
+
+   ```bash
+   git tag v0.2.0
+   git push origin v0.2.0
+   ```
+
+After publishing, users can install the new version with:
+
+```bash
+pip install --upgrade bqcsv
+```
