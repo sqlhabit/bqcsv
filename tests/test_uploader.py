@@ -12,8 +12,8 @@ from upload_bq_dataset.uploader import (
 
 
 class InferSchemaTests(unittest.TestCase):
-    def test_semicolon_csv_infers_four_typed_columns(self) -> None:
-        csv_path = Path(__file__).resolve().parents[1] / "test.csv"
+    def test_semicolon_csv_infers_typed_columns(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_semicolon.csv"
         delimiter = detect_field_delimiter(csv_path)
         schema = infer_bq_schema_from_csv(
             csv_path,
@@ -22,7 +22,7 @@ class InferSchemaTests(unittest.TestCase):
         )
 
         self.assertEqual(delimiter, ";")
-        self.assertEqual(len(schema), 4)
+        self.assertEqual(len(schema), 7)
         self.assertEqual(
             [(field.name, field.field_type) for field in schema],
             [
@@ -30,6 +30,33 @@ class InferSchemaTests(unittest.TestCase):
                 ("email", "STRING"),
                 ("created_date", "DATE"),
                 ("created_at", "TIMESTAMP"),
+                ("is_active", "BOOLEAN"),
+                ("score", "FLOAT"),
+                ("notes", "STRING"),
+            ],
+        )
+
+    def test_comma_csv_infers_typed_columns(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        delimiter = detect_field_delimiter(csv_path)
+        schema = infer_bq_schema_from_csv(
+            csv_path,
+            field_delimiter=delimiter,
+            skip_header=True,
+        )
+
+        self.assertEqual(delimiter, ",")
+        self.assertEqual(len(schema), 7)
+        self.assertEqual(
+            [(field.name, field.field_type) for field in schema],
+            [
+                ("id", "INTEGER"),
+                ("email", "STRING"),
+                ("created_date", "DATE"),
+                ("created_at", "TIMESTAMP"),
+                ("is_active", "BOOLEAN"),
+                ("score", "FLOAT"),
+                ("notes", "STRING"),
             ],
         )
 
@@ -65,7 +92,7 @@ class InferSchemaTests(unittest.TestCase):
         self.assertIn("--field_delimiter=;", cmd)
 
     def test_timestamp_values_are_normalized_for_bq_load(self) -> None:
-        csv_path = Path(__file__).resolve().parents[1] / "test.csv"
+        csv_path = Path(__file__).resolve().parent / "test_semicolon.csv"
         delimiter = detect_field_delimiter(csv_path)
         schema = infer_bq_schema_from_csv(
             csv_path,

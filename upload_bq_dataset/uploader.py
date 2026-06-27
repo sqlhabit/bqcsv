@@ -17,6 +17,7 @@ _DEFAULT_FIELD_DELIMITER = ","
 _DELIMITER_SAMPLE_SIZE = 8192
 _INTEGER_RE = re.compile(r"^-?\d+$")
 _DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+_BOOLEAN_VALUES = frozenset({"true", "false"})
 
 
 class UploadError(Exception):
@@ -101,6 +102,9 @@ def _infer_bq_type_for_series(series: pd.Series) -> str:
 
     if values.str.match(_INTEGER_RE).all():
         return "INTEGER"
+
+    if values.str.lower().isin(_BOOLEAN_VALUES).all():
+        return "BOOLEAN"
 
     numeric = pd.to_numeric(series, errors="coerce")
     non_null = series.notna()
