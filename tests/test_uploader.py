@@ -2,13 +2,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bqcsv.uploader import (
-    _format_dataframe_for_bq_load,
-    _read_csv_dataframe,
-    build_load_command,
+from bqcsv.schema import (
     detect_field_delimiter,
+    format_dataframe_for_bq_load,
     infer_bq_schema_from_csv,
+    read_csv_dataframe,
 )
+from bqcsv.uploader import build_load_command
 
 
 class InferSchemaTests(unittest.TestCase):
@@ -99,12 +99,12 @@ class InferSchemaTests(unittest.TestCase):
             field_delimiter=delimiter,
             skip_header=True,
         )
-        dataframe = _read_csv_dataframe(
+        dataframe = read_csv_dataframe(
             csv_path,
             field_delimiter=delimiter,
             skip_header=True,
         )
-        prepared = _format_dataframe_for_bq_load(dataframe, schema)
+        prepared = format_dataframe_for_bq_load(dataframe, schema)
         self.assertEqual(prepared.loc[0, "created_at"], "2026-05-14 09:21:11.183710")
 
 
