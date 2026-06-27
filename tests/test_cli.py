@@ -1,7 +1,8 @@
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
-from upload_bq_dataset.cli import resolve_table_name
+from upload_bq_dataset.cli import _run_upload, resolve_table_name
 
 
 class ResolveTableNameTests(unittest.TestCase):
@@ -26,6 +27,58 @@ class ResolveTableNameTests(unittest.TestCase):
             resolve_table_name(csv_path, "cli_table", {"table": "saved_table"}),
             "cli_table",
         )
+
+
+class RunUploadStatusTests(unittest.TestCase):
+    def test_prints_success_status_on_upload(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        with patch("upload_bq_dataset.cli.upload_csv") as upload_csv:
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload(
+                    [
+                        str(csv_path),
+                        "--project",
+                        "proj",
+                        "--dataset",
+                        "ds",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        upload_csv.assert_called_once()
+        printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertIn("Status: successfully uploaded.", printed)
+
+    def test_prints_error_status_on_upload_failure(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        with patch(
+            "upload_bq_dataset.cli.upload_csv",
+            side_effect=RuntimeError("CSV parsing failed"),
+        ):
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload(
+                    [
+                        str(csv_path),
+                        "--project",
+                        "proj",
+                        "--dataset",
+                        "ds",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 1)
+        printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertIn("Status: error.", printed)
+
+    def test_prints_error_status_when_settings_missing(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        with patch("upload_bq_dataset.cli.load_config", return_value={}):
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload([str(csv_path)])
+
+        self.assertEqual(exit_code, 2)
+        printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertIn("Status: error.", printed)
 
 
 if __name__ == "__main__":

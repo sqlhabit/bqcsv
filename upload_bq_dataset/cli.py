@@ -12,7 +12,7 @@ from upload_bq_dataset.config import (
     save_config,
     unset_config,
 )
-from upload_bq_dataset.uploader import UploadError, upload_csv
+from upload_bq_dataset.uploader import upload_csv
 
 
 def _upload_parser() -> argparse.ArgumentParser:
@@ -98,6 +98,7 @@ def _run_upload(argv: list[str]) -> int:
             f"Set them on the command line or via `upload-bq-dataset config set`.",
             file=sys.stderr,
         )
+        print("Status: error.")
         return 2
 
     try:
@@ -110,12 +111,14 @@ def _run_upload(argv: list[str]) -> int:
             skip_header=not args.no_header,
             schema_path=args.schema.expanduser().resolve() if args.schema else None,
         )
-    except UploadError as exc:
+    except Exception as exc:
         print(str(exc), file=sys.stderr)
+        print("Status: error.")
         return 1
 
     destination = f"{project}:{dataset}.{table}" if project else f"{dataset}.{table}"
     print(f"Uploaded {args.csv_path} to {destination}")
+    print("Status: successfully uploaded.")
     return 0
 
 
