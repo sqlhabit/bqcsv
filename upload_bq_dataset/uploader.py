@@ -6,6 +6,7 @@ import re
 import shutil
 import subprocess
 import tempfile
+from collections.abc import Callable
 from pathlib import Path
 
 import pandas as pd
@@ -309,6 +310,11 @@ def build_load_command(
     return cmd
 
 
+def _log(on_log: Callable[[str], None] | None, message: str) -> None:
+    if on_log is not None:
+        on_log(message)
+
+
 def upload_csv(
     csv_path: Path,
     *,
@@ -318,6 +324,7 @@ def upload_csv(
     replace: bool = False,
     skip_header: bool = True,
     schema_path: Path | None = None,
+    on_log: Callable[[str], None] | None = None,
 ) -> None:
     ensure_bq_available()
     if not csv_path.is_file():
@@ -326,6 +333,7 @@ def upload_csv(
         raise UploadError(f"Schema file not found: {schema_path}")
 
     field_delimiter = detect_field_delimiter(csv_path)
+    _log(on_log, f"Detected field delimiter: {field_delimiter!r}")
     table_id = _table_id(project=project, dataset=dataset, table=table)
     client = _get_bq_client(project)
 
@@ -349,6 +357,7 @@ def upload_csv(
 
     if explicit_schema is not None:
         csv_schema = explicit_schema
+        _log(on_log, f"Using schema from {schema_path}")
     else:
         csv_schema = infer_bq_schema_from_csv(
             csv_path,
@@ -356,6 +365,7 @@ def upload_csv(
             skip_header=skip_header,
             column_names=column_names,
         )
+        _log(on_log, f"Inferred schema: [{_format_schema(csv_schema)}]")
 
     load_schema = _ensure_table_exists(
         client,
@@ -363,6 +373,7 @@ def upload_csv(
         csv_schema,
         replace=replace,
     )
+    _log(on_log, f"Destination table ready: {table_id}")
 
     dataframe = _read_csv_dataframe(
         csv_path,
@@ -388,8 +399,16 @@ def upload_csv(
             skip_header=skip_header,
             field_delimiter=field_delimiter,
         )
+        _log(on_log, f"Running: {' '.join(cmd)}")
         try:
-            subprocess.run(cmd, check=True)
+            if on_log is not None:
+                result = subprocess.run(cmd, check=True, capture_output=True, text=True)
+                if result.stdout.strip():
+                    _log(on_log, result.stdout.rstrip())
+                if result.stderr.strip():
+                    _log(on_log, result.stderr.rstrip())
+            else:
+                subprocess.run(cmd, check=True)
         except subprocess.CalledProcessError as exc:
             raise UploadError(f"`bq load` failed with exit code {exc.returncode}") from exc
     finally:

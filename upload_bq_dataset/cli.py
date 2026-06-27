@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import argparse
+import json
 import sys
 from pathlib import Path
 
@@ -42,6 +43,12 @@ def _upload_parser() -> argparse.ArgumentParser:
         type=Path,
         help="Optional JSON schema file for the table (disables autodetect)",
     )
+    parser.add_argument(
+        "--output",
+        choices=("text", "json"),
+        default="text",
+        help="Output format: text prints progress as it runs; json prints a single JSON object at the end",
+    )
     return parser
 
 
@@ -78,6 +85,20 @@ def resolve_table_name(
     return csv_path.expanduser().resolve().stem
 
 
+def _emit_upload_result(
+    *,
+    output: str,
+    logs: list[str],
+    status: str,
+) -> None:
+    if output == "json":
+        print(json.dumps({"logs": "\n".join(logs), "status": status}))
+        return
+    for line in logs:
+        print(line, file=sys.stderr if status == "error" else sys.stdout)
+    print(f"Status: {status}.")
+
+
 def _run_upload(argv: list[str]) -> int:
     args = _upload_parser().parse_args(argv)
     config = load_config()
@@ -85,6 +106,8 @@ def _run_upload(argv: list[str]) -> int:
     project = resolve_setting(args.project, config, "project")
     dataset = resolve_setting(args.dataset, config, "dataset")
     table = resolve_table_name(csv_path, args.table, config)
+    json_output = args.output == "json"
+    logs: list[str] = []
 
     missing = [
         name
@@ -93,12 +116,11 @@ def _run_upload(argv: list[str]) -> int:
     ]
     if missing:
         names = ", ".join(f"--{name}" for name in missing)
-        print(
+        logs.append(
             f"Missing required setting(s): {names}. "
-            f"Set them on the command line or via `upload-bq-dataset config set`.",
-            file=sys.stderr,
+            f"Set them on the command line or via `upload-bq-dataset config set`."
         )
-        print("Status: error.")
+        _emit_upload_result(output=args.output, logs=logs, status="error")
         return 2
 
     try:
@@ -110,15 +132,16 @@ def _run_upload(argv: list[str]) -> int:
             replace=args.replace,
             skip_header=not args.no_header,
             schema_path=args.schema.expanduser().resolve() if args.schema else None,
+            on_log=logs.append if json_output else None,
         )
     except Exception as exc:
-        print(str(exc), file=sys.stderr)
-        print("Status: error.")
+        logs.append(str(exc))
+        _emit_upload_result(output=args.output, logs=logs, status="error")
         return 1
 
     destination = f"{project}:{dataset}.{table}" if project else f"{dataset}.{table}"
-    print(f"Uploaded {args.csv_path} to {destination}")
-    print("Status: successfully uploaded.")
+    logs.append(f"Uploaded {args.csv_path} to {destination}")
+    _emit_upload_result(output=args.output, logs=logs, status="success")
     return 0
 
 

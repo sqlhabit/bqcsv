@@ -1,3 +1,4 @@
+import json
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -47,7 +48,7 @@ class RunUploadStatusTests(unittest.TestCase):
         self.assertEqual(exit_code, 0)
         upload_csv.assert_called_once()
         printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
-        self.assertIn("Status: successfully uploaded.", printed)
+        self.assertIn("Status: success.", printed)
 
     def test_prints_error_status_on_upload_failure(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
@@ -79,6 +80,60 @@ class RunUploadStatusTests(unittest.TestCase):
         self.assertEqual(exit_code, 2)
         printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
         self.assertIn("Status: error.", printed)
+
+    def test_json_output_prints_single_result_on_success(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+
+        def fake_upload(*_args, on_log=None, **_kwargs):
+            if on_log is not None:
+                on_log("Detected field delimiter: ','")
+                on_log("Inferred schema: [id:INTEGER]")
+
+        with patch("upload_bq_dataset.cli.upload_csv", side_effect=fake_upload):
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload(
+                    [
+                        str(csv_path),
+                        "--project",
+                        "proj",
+                        "--dataset",
+                        "ds",
+                        "--output",
+                        "json",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        printed = "".join(call.args[0] for call in stdout.write.call_args_list)
+        result = json.loads(printed)
+        self.assertEqual(result["status"], "success")
+        self.assertIn("Detected field delimiter", result["logs"])
+        self.assertIn(f"Uploaded {csv_path} to proj:ds.", result["logs"])
+
+    def test_json_output_prints_single_result_on_error(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        with patch(
+            "upload_bq_dataset.cli.upload_csv",
+            side_effect=RuntimeError("CSV parsing failed"),
+        ):
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload(
+                    [
+                        str(csv_path),
+                        "--project",
+                        "proj",
+                        "--dataset",
+                        "ds",
+                        "--output",
+                        "json",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 1)
+        printed = "".join(call.args[0] for call in stdout.write.call_args_list)
+        result = json.loads(printed)
+        self.assertEqual(result["status"], "error")
+        self.assertIn("CSV parsing failed", result["logs"])
 
 
 if __name__ == "__main__":
