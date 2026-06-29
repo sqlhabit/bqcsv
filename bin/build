@@ -1,0 +1,37 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+cd "$ROOT"
+
+python3 -m pip install -q build twine
+
+VERSION="$(python3 - <<'PY'
+import pathlib
+import re
+import sys
+
+pyproject = pathlib.Path("pyproject.toml").read_text()
+init = pathlib.Path("src/__init__.py").read_text()
+match = re.search(r'^version = "([^"]+)"', pyproject, re.M)
+if not match:
+    sys.exit("Could not read version from pyproject.toml")
+pyproject_version = match.group(1)
+match = re.search(r'__version__ = "([^"]+)"', init)
+if not match:
+    sys.exit("Could not read __version__ from src/__init__.py")
+init_version = match.group(1)
+if pyproject_version != init_version:
+    sys.exit(
+        f"Version mismatch: pyproject.toml={pyproject_version}, "
+        f"src/__init__.py={init_version}"
+    )
+print(pyproject_version)
+PY
+)"
+
+echo "Building bqcsv $VERSION"
+rm -rf dist/
+python3 -m build
+echo "Built:"
+ls -1 dist/
