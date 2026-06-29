@@ -8,7 +8,7 @@ from pathlib import Path
 
 from google.api_core.exceptions import NotFound
 
-from bqcsv.schema import (
+from src.schema import (
     DEFAULT_FIELD_DELIMITER,
     SchemaError,
     detect_field_delimiter,
@@ -19,7 +19,7 @@ from bqcsv.schema import (
     read_csv_dataframe,
     write_schema_file,
 )
-from bqcsv.table import TableError, ensure_table_exists, get_bq_client, table_id
+from src.table import TableError, ensure_table_exists, get_bq_client, table_id
 
 
 class UploadError(Exception):

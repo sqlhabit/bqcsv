@@ -2,13 +2,13 @@ import tempfile
 import unittest
 from pathlib import Path
 
-from bqcsv.schema import (
+from src.schema import (
     detect_field_delimiter,
     format_dataframe_for_bq_load,
     infer_bq_schema_from_csv,
     read_csv_dataframe,
 )
-from bqcsv.uploader import build_load_command
+from src.uploader import build_load_command
 
 
 class InferSchemaTests(unittest.TestCase):

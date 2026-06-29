@@ -81,7 +81,7 @@ bq rm -f -t  PROJECT_ID:DATASET_ID.TABLE_NAME
 You can run the module directly when working on a new feature or fixing a bug:
 
 ```sh
-python -m bqcsv.cli config set --project PROJECT_ID --dataset DATASET_ID --table TEST_TABLE_NAME
+python -m src.cli config set --project PROJECT_ID --dataset DATASET_ID --table TEST_TABLE_NAME
 ```
 
 ## Releasing to PyPI
