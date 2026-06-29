@@ -3,7 +3,21 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.cli import _run_upload, resolve_table_name
+from src.cli import _run_upload, build_sample_query, resolve_table_name
+
+
+class BuildSampleQueryTests(unittest.TestCase):
+    def test_includes_project_when_provided(self) -> None:
+        self.assertEqual(
+            build_sample_query(project="proj", dataset="ds", table="tbl"),
+            "SELECT *\nFROM proj.ds.tbl\nLIMIT 500",
+        )
+
+    def test_omits_project_when_not_provided(self) -> None:
+        self.assertEqual(
+            build_sample_query(project=None, dataset="ds", table="tbl"),
+            "SELECT *\nFROM ds.tbl\nLIMIT 500",
+        )
 
 
 class ResolveTableNameTests(unittest.TestCase):
@@ -49,6 +63,10 @@ class RunUploadStatusTests(unittest.TestCase):
         upload_csv.assert_called_once()
         printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
         self.assertIn("Status: success.", printed)
+        self.assertIn("Here's a sample query:", printed)
+        self.assertIn("SELECT *", printed)
+        self.assertIn("FROM proj.ds.", printed)
+        self.assertIn("LIMIT 500", printed)
 
     def test_prints_error_status_on_upload_failure(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
@@ -109,6 +127,10 @@ class RunUploadStatusTests(unittest.TestCase):
         self.assertEqual(result["status"], "success")
         self.assertIn("Detected field delimiter", result["logs"])
         self.assertIn(f"Uploaded {csv_path} to proj:ds.", result["logs"])
+        self.assertEqual(
+            result["sample_query"],
+            "SELECT *\nFROM proj.ds.test_comma\nLIMIT 500",
+        )
 
     def test_json_output_prints_single_result_on_error(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"

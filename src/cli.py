@@ -13,6 +13,7 @@ from src.config import (
     save_config,
     unset_config,
 )
+from src.table import table_id
 from src.uploader import upload_csv
 
 
@@ -85,18 +86,35 @@ def resolve_table_name(
     return csv_path.expanduser().resolve().stem
 
 
+def build_sample_query(*, project: str | None, dataset: str, table: str) -> str:
+    final_table_name = table_id(project=project, dataset=dataset, table=table)
+    return f"SELECT *\nFROM {final_table_name}\nLIMIT 500"
+
+
 def _emit_upload_result(
     *,
     output: str,
     logs: list[str],
     status: str,
+    sample_query: str | None = None,
 ) -> None:
     if output == "json":
-        print(json.dumps({"logs": "\n".join(logs), "status": status}))
+        payload: dict[str, str] = {"logs": "\n".join(logs), "status": status}
+        if sample_query is not None:
+            payload["sample_query"] = sample_query
+        print(json.dumps(payload))
         return
     for line in logs:
         print(line, file=sys.stderr if status == "error" else sys.stdout)
-    print(f"Status: {status}.")
+    if sample_query is not None:
+        print()
+        print(f"Status: {status}.")
+        print()
+        print("Here's a sample query:")
+        print()
+        print(sample_query)
+    else:
+        print(f"Status: {status}.")
 
 
 def _run_upload(argv: list[str]) -> int:
@@ -141,7 +159,13 @@ def _run_upload(argv: list[str]) -> int:
 
     destination = f"{project}:{dataset}.{table}" if project else f"{dataset}.{table}"
     logs.append(f"Uploaded {args.csv_path} to {destination}")
-    _emit_upload_result(output=args.output, logs=logs, status="success")
+    sample_query = build_sample_query(project=project, dataset=dataset, table=table)
+    _emit_upload_result(
+        output=args.output,
+        logs=logs,
+        status="success",
+        sample_query=sample_query,
+    )
     return 0
 
 
