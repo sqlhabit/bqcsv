@@ -14,7 +14,7 @@ from bqcsv.config import (
     save_config,
     unset_config,
 )
-from bqcsv.table import table_id
+from bqcsv.table import table_id, table_name_from_filename
 from bqcsv.uploader import upload_csv
 
 
@@ -28,7 +28,7 @@ def _upload_parser() -> argparse.ArgumentParser:
     parser.add_argument("--dataset", help="BigQuery dataset ID (overrides config)")
     parser.add_argument(
         "--table",
-        help="BigQuery table ID (overrides config; defaults to the CSV file name without extension)",
+        help="BigQuery table ID (overrides config; defaults to a sanitized version of the CSV file name)",
     )
     parser.add_argument(
         "--replace",
@@ -84,7 +84,7 @@ def resolve_table_name(
     table = resolve_setting(cli_table, config, "table")
     if table:
         return table
-    return csv_path.expanduser().resolve().stem
+    return table_name_from_filename(csv_path.expanduser().resolve().stem)
 
 
 def build_sample_query(*, project: str | None, dataset: str, table: str) -> str:

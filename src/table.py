@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import re
+
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
@@ -8,6 +10,15 @@ from bqcsv.schema import format_schema, schemas_match
 
 class TableError(Exception):
     pass
+
+
+def table_name_from_filename(filename_stem: str) -> str:
+    name = re.sub(r"[^a-z0-9]+", "_", filename_stem.lower()).strip("_")
+    if not name:
+        name = "unnamed"
+    if name[0].isdigit():
+        name = f"csv_{name}"
+    return name
 
 
 def table_id(*, project: str | None, dataset: str, table: str) -> str:

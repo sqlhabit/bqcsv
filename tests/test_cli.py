@@ -5,6 +5,7 @@ from unittest.mock import patch
 
 from bqcsv import __version__
 from bqcsv.cli import _run_upload, build_sample_query, main, resolve_table_name
+from bqcsv.table import table_name_from_filename
 
 
 class VersionTests(unittest.TestCase):
@@ -39,10 +40,32 @@ class BuildSampleQueryTests(unittest.TestCase):
         )
 
 
+class TableNameFromFilenameTests(unittest.TestCase):
+    def test_sanitizes_special_characters_and_spaces(self) -> None:
+        self.assertEqual(
+            table_name_from_filename("Total Offers (4)"),
+            "total_offers_4",
+        )
+
+    def test_prefixes_csv_when_name_starts_with_digit(self) -> None:
+        self.assertEqual(table_name_from_filename("4 events"), "csv_4_events")
+
+    def test_leaves_simple_names_unchanged(self) -> None:
+        self.assertEqual(table_name_from_filename("my_export"), "my_export")
+
+
 class ResolveTableNameTests(unittest.TestCase):
-    def test_uses_csv_stem_when_table_not_provided(self) -> None:
+    def test_uses_sanitized_csv_stem_when_table_not_provided(self) -> None:
         csv_path = Path("/tmp/data/my_export.csv")
         self.assertEqual(resolve_table_name(csv_path, None, {}), "my_export")
+
+    def test_sanitizes_csv_stem_with_special_characters(self) -> None:
+        csv_path = Path("/tmp/data/Total Offers (4).csv")
+        self.assertEqual(resolve_table_name(csv_path, None, {}), "total_offers_4")
+
+    def test_prefixes_csv_when_sanitized_stem_starts_with_digit(self) -> None:
+        csv_path = Path("/tmp/data/4 events.csv")
+        self.assertEqual(resolve_table_name(csv_path, None, {}), "csv_4_events")
 
     def test_cli_table_overrides_csv_stem(self) -> None:
         csv_path = Path("/tmp/data/my_export.csv")
