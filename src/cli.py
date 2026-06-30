@@ -5,6 +5,7 @@ import json
 import sys
 from pathlib import Path
 
+from bqcsv import __version__
 from bqcsv.config import (
     CONFIG_KEYS,
     CONFIG_PATH,
@@ -214,8 +215,15 @@ def _run_config(argv: list[str]) -> int:
     return args.func(args)
 
 
+def _print_version() -> int:
+    print(f"bqcsv {__version__}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     argv = list(sys.argv[1:] if argv is None else argv)
+    if argv and argv[0] in ("-v", "--version"):
+        return _print_version()
     if argv and argv[0] == "config":
         return _run_config(argv[1:])
     return _run_upload(argv)

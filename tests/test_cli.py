@@ -3,7 +3,26 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from bqcsv.cli import _run_upload, build_sample_query, resolve_table_name
+from bqcsv import __version__
+from bqcsv.cli import _run_upload, build_sample_query, main, resolve_table_name
+
+
+class VersionTests(unittest.TestCase):
+    def test_short_version_flag(self) -> None:
+        with patch("sys.stdout") as stdout:
+            exit_code = main(["-v"])
+
+        self.assertEqual(exit_code, 0)
+        printed = "".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertEqual(printed.strip(), f"bqcsv {__version__}")
+
+    def test_long_version_flag(self) -> None:
+        with patch("sys.stdout") as stdout:
+            exit_code = main(["--version"])
+
+        self.assertEqual(exit_code, 0)
+        printed = "".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertEqual(printed.strip(), f"bqcsv {__version__}")
 
 
 class BuildSampleQueryTests(unittest.TestCase):
