@@ -15,6 +15,7 @@ _DELIMITER_SAMPLE_SIZE = 8192
 _INTEGER_RE = re.compile(r"^-?\d+$")
 _DATE_ONLY_RE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 _BOOLEAN_VALUES = frozenset({"true", "false"})
+_UNNAMED_COLUMN_RE = re.compile(r"^Unnamed: \d+$", re.IGNORECASE)
 
 
 class SchemaError(Exception):
@@ -104,6 +105,55 @@ def _infer_bq_type_for_series(series: pd.Series) -> str:
     return "STRING"
 
 
+def _is_blank_column_name(name: str) -> bool:
+    stripped = str(name).strip()
+    if not stripped:
+        return True
+    return _UNNAMED_COLUMN_RE.match(stripped) is not None
+
+
+def _dedupe_column_name(name: str, seen: set[str]) -> str:
+    if name not in seen:
+        seen.add(name)
+        return name
+    suffix = 2
+    while f"{name}_{suffix}" in seen:
+        suffix += 1
+    deduped = f"{name}_{suffix}"
+    seen.add(deduped)
+    return deduped
+
+
+def sanitize_column_names(raw_names: list[str]) -> list[str]:
+    empty_index = 0
+    seen: set[str] = set()
+    sanitized: list[str] = []
+
+    for raw_name in raw_names:
+        name = str(raw_name).strip()
+        if _is_blank_column_name(name):
+            empty_index += 1
+            candidate = f"col_{empty_index}"
+        else:
+            is_boolean_question = name.endswith("?")
+            if is_boolean_question:
+                name = name[:-1].strip()
+
+            candidate = re.sub(r"[^a-z0-9]+", "_", name.lower()).strip("_")
+            if not candidate:
+                empty_index += 1
+                candidate = f"col_{empty_index}"
+            else:
+                if is_boolean_question:
+                    candidate = f"is_{candidate}"
+                if candidate[0].isdigit():
+                    candidate = f"col_{candidate}"
+
+        sanitized.append(_dedupe_column_name(candidate, seen))
+
+    return sanitized
+
+
 def load_schema_from_json(schema_path: Path) -> list[bigquery.SchemaField]:
     with schema_path.open(encoding="utf-8") as handle:
         raw_schema = json.load(handle)
@@ -126,6 +176,15 @@ def read_csv_dataframe(
     }
     if skip_header:
         dataframe = pd.read_csv(**read_kwargs)
+        if column_names is None:
+            dataframe.columns = sanitize_column_names(list(dataframe.columns))
+        elif len(column_names) != len(dataframe.columns):
+            raise SchemaError(
+                f"CSV has {len(dataframe.columns)} column(s) but expected "
+                f"{len(column_names)} column name(s)."
+            )
+        else:
+            dataframe.columns = column_names
     else:
         dataframe = pd.read_csv(**read_kwargs, header=None)
         if column_names is None:

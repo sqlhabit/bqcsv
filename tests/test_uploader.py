@@ -7,11 +7,60 @@ from bqcsv.schema import (
     format_dataframe_for_bq_load,
     infer_bq_schema_from_csv,
     read_csv_dataframe,
+    sanitize_column_names,
 )
 from bqcsv.uploader import build_load_command
 
 
 class InferSchemaTests(unittest.TestCase):
+    def test_sanitize_column_names_from_invalid_csv_headers(self) -> None:
+        raw_names = [
+            "Unnamed: 0",
+            "Deal Creation Date",
+            "Post HB Deal?",
+            "ID",
+            "5 events",
+            "Unnamed: 5",
+        ]
+        self.assertEqual(
+            sanitize_column_names(raw_names),
+            [
+                "col_1",
+                "deal_creation_date",
+                "is_post_hb_deal",
+                "id",
+                "col_5_events",
+                "col_2",
+            ],
+        )
+
+    def test_invalid_csv_headers_are_sanitized_before_schema_inference(self) -> None:
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as handle:
+            handle.write(",Deal Creation Date,Post HB Deal?,ID,5 events,\n")
+            handle.write("a,2024-01-01,yes,abc,5,b\n")
+            csv_path = Path(handle.name)
+
+        try:
+            delimiter = detect_field_delimiter(csv_path)
+            schema = infer_bq_schema_from_csv(
+                csv_path,
+                field_delimiter=delimiter,
+                skip_header=True,
+            )
+            self.assertEqual(
+                [field.name for field in schema],
+                [
+                    "col_1",
+                    "deal_creation_date",
+                    "is_post_hb_deal",
+                    "id",
+                    "col_5_events",
+                    "col_2",
+                ],
+            )
+        finally:
+            csv_path.unlink(missing_ok=True)
+
     def test_semicolon_csv_infers_typed_columns(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_semicolon.csv"
         delimiter = detect_field_delimiter(csv_path)
