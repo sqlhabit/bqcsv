@@ -66,7 +66,7 @@ class ResolveTableNameTests(unittest.TestCase):
 class RunUploadStatusTests(unittest.TestCase):
     def test_prints_success_status_on_upload(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
-        with patch("src.cli.upload_csv") as upload_csv:
+        with patch("bqcsv.cli.upload_csv") as upload_csv:
             with patch("sys.stdout") as stdout:
                 exit_code = _run_upload(
                     [
@@ -90,7 +90,7 @@ class RunUploadStatusTests(unittest.TestCase):
     def test_prints_error_status_on_upload_failure(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
         with patch(
-            "src.cli.upload_csv",
+            "bqcsv.cli.upload_csv",
             side_effect=RuntimeError("CSV parsing failed"),
         ):
             with patch("sys.stdout") as stdout:
@@ -110,7 +110,7 @@ class RunUploadStatusTests(unittest.TestCase):
 
     def test_prints_error_status_when_settings_missing(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
-        with patch("src.cli.load_config", return_value={}):
+        with patch("bqcsv.cli.load_config", return_value={}):
             with patch("sys.stdout") as stdout:
                 exit_code = _run_upload([str(csv_path)])
 
@@ -126,7 +126,7 @@ class RunUploadStatusTests(unittest.TestCase):
                 on_log("Detected field delimiter: ','")
                 on_log("Inferred schema: [id:INTEGER]")
 
-        with patch("src.cli.upload_csv", side_effect=fake_upload):
+        with patch("bqcsv.cli.upload_csv", side_effect=fake_upload):
             with patch("sys.stdout") as stdout:
                 exit_code = _run_upload(
                     [
@@ -154,7 +154,7 @@ class RunUploadStatusTests(unittest.TestCase):
     def test_json_output_prints_single_result_on_error(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
         with patch(
-            "src.cli.upload_csv",
+            "bqcsv.cli.upload_csv",
             side_effect=RuntimeError("CSV parsing failed"),
         ):
             with patch("sys.stdout") as stdout:
