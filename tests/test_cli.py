@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch
 
-from src.cli import _run_upload, build_sample_query, resolve_table_name
+from bqcsv.cli import _run_upload, build_sample_query, resolve_table_name
 
 
 class BuildSampleQueryTests(unittest.TestCase):

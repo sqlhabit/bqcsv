@@ -3,7 +3,7 @@ from __future__ import annotations
 from google.api_core.exceptions import NotFound
 from google.cloud import bigquery
 
-from src.schema import format_schema, schemas_match
+from bqcsv.schema import format_schema, schemas_match
 
 
 class TableError(Exception):

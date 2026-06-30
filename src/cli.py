@@ -5,7 +5,7 @@ import json
 import sys
 from pathlib import Path
 
-from src.config import (
+from bqcsv.config import (
     CONFIG_KEYS,
     CONFIG_PATH,
     load_config,
@@ -13,8 +13,8 @@ from src.config import (
     save_config,
     unset_config,
 )
-from src.table import table_id
-from src.uploader import upload_csv
+from bqcsv.table import table_id
+from bqcsv.uploader import upload_csv
 
 
 def _upload_parser() -> argparse.ArgumentParser:

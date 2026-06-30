@@ -14,7 +14,7 @@ dependencies = [
 ]
 
 [project.scripts]
-bqcsv = "src.cli:main"
+bqcsv = "bqcsv.cli:main"
 
 [tool.setuptools]
 packages = ["bqcsv"]
