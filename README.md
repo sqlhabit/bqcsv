@@ -72,6 +72,31 @@ pip install -e .
 
 ### Testing
 
+After installing the package locally (`pip install -e .`), run the unit tests with:
+
+```bash
+python -m unittest discover -s tests -v
+```
+
+This discovers and runs all tests under `tests/` without needing BigQuery credentials.
+
+To run a single test or test class, pass its dotted path to `unittest`:
+
+```bash
+# one test method
+python -m unittest tests.test_uploader.InferSchemaTests.test_comma_csv_infers_typed_columns -v
+
+# all tests in a class
+python -m unittest tests.test_cli.ResolveTableNameTests -v
+```
+
+To run all tests in one file, use the module path (drop `.py` from the filename under `tests/`):
+
+```bash
+python -m unittest tests.test_uploader -v
+python -m unittest tests.test_cli -v
+```
+
 To delete a test table, use `bq`:
 
 ```bash

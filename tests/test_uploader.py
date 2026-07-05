@@ -17,7 +17,7 @@ class InferSchemaTests(unittest.TestCase):
         raw_names = [
             "Unnamed: 0",
             "Deal Creation Date",
-            "Post HB Deal?",
+            "Upsell Deal?",
             "ID",
             "5 events",
             "Unnamed: 5",
@@ -27,7 +27,7 @@ class InferSchemaTests(unittest.TestCase):
             [
                 "col_1",
                 "deal_creation_date",
-                "is_post_hb_deal",
+                "is_upsell_deal",
                 "id",
                 "col_5_events",
                 "col_2",
@@ -36,7 +36,7 @@ class InferSchemaTests(unittest.TestCase):
 
     def test_invalid_csv_headers_are_sanitized_before_schema_inference(self) -> None:
         with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as handle:
-            handle.write(",Deal Creation Date,Post HB Deal?,ID,5 events,\n")
+            handle.write(",Deal Creation Date,Upsell Deal?,ID,5 events,\n")
             handle.write("a,2024-01-01,yes,abc,5,b\n")
             csv_path = Path(handle.name)
 
@@ -52,7 +52,7 @@ class InferSchemaTests(unittest.TestCase):
                 [
                     "col_1",
                     "deal_creation_date",
-                    "is_post_hb_deal",
+                    "is_upsell_deal",
                     "id",
                     "col_5_events",
                     "col_2",
