@@ -4,6 +4,7 @@ import csv
 import json
 import re
 import tempfile
+import warnings
 from pathlib import Path
 
 import pandas as pd
@@ -103,6 +104,17 @@ def _infer_bq_type_for_series(series: pd.Series) -> str:
         return "TIMESTAMP"
 
     return "STRING"
+
+
+def _can_store_as_int64(series: pd.Series) -> bool:
+    numeric = pd.to_numeric(series, errors="coerce")
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", RuntimeWarning)
+        try:
+            numeric.astype("Int64")
+        except (TypeError, ValueError):
+            return False
+    return True
 
 
 def _is_blank_column_name(name: str) -> bool:
@@ -228,7 +240,7 @@ def infer_bq_schema_from_csv(
     field_delimiter: str,
     skip_header: bool,
     column_names: list[str] | None = None,
-) -> list[bigquery.SchemaField]:
+) -> tuple[list[bigquery.SchemaField], list[str]]:
     dataframe = read_csv_dataframe(
         csv_path,
         field_delimiter=field_delimiter,
@@ -236,10 +248,15 @@ def infer_bq_schema_from_csv(
         column_names=column_names,
     )
 
-    return [
-        bigquery.SchemaField(str(column), _infer_bq_type_for_series(dataframe[column]))
-        for column in dataframe.columns
-    ]
+    fields: list[bigquery.SchemaField] = []
+    integer_as_string: list[str] = []
+    for column in dataframe.columns:
+        field_type = _infer_bq_type_for_series(dataframe[column])
+        if field_type == "INTEGER" and not _can_store_as_int64(dataframe[column]):
+            field_type = "STRING"
+            integer_as_string.append(str(column))
+        fields.append(bigquery.SchemaField(str(column), field_type))
+    return fields, integer_as_string
 
 
 def format_schema(schema: list[bigquery.SchemaField]) -> str:

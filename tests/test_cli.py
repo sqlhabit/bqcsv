@@ -39,6 +39,22 @@ class BuildSampleQueryTests(unittest.TestCase):
             "SELECT *\nFROM ds.tbl\nLIMIT 500",
         )
 
+    def test_comments_cast_for_columns_stored_as_string(self) -> None:
+        self.assertEqual(
+            build_sample_query(
+                project="proj",
+                dataset="ds",
+                table="tbl",
+                integer_as_string=["id", "campaign_id"],
+            ),
+            "SELECT\n"
+            "  *\n"
+            "  -- CAST(id AS INT64) AS id\n"
+            "  -- CAST(campaign_id AS INT64) AS campaign_id\n"
+            "FROM proj.ds.tbl\n"
+            "LIMIT 500",
+        )
+
 
 class TableNameFromFilenameTests(unittest.TestCase):
     def test_sanitizes_special_characters_and_spaces(self) -> None:
@@ -109,6 +125,24 @@ class RunUploadStatusTests(unittest.TestCase):
         self.assertIn("SELECT *", printed)
         self.assertIn("FROM proj.ds.", printed)
         self.assertIn("LIMIT 500", printed)
+
+    def test_prints_commented_cast_when_upload_returns_stringified_integers(self) -> None:
+        csv_path = Path(__file__).resolve().parent / "test_comma.csv"
+        with patch("bqcsv.cli.upload_csv", return_value=["id"]):
+            with patch("sys.stdout") as stdout:
+                exit_code = _run_upload(
+                    [
+                        str(csv_path),
+                        "--project",
+                        "proj",
+                        "--dataset",
+                        "ds",
+                    ]
+                )
+
+        self.assertEqual(exit_code, 0)
+        printed = " ".join(call.args[0] for call in stdout.write.call_args_list)
+        self.assertIn("-- CAST(id AS INT64) AS id", printed)
 
     def test_prints_error_status_on_upload_failure(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"

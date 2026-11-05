@@ -42,7 +42,7 @@ class InferSchemaTests(unittest.TestCase):
 
         try:
             delimiter = detect_field_delimiter(csv_path)
-            schema = infer_bq_schema_from_csv(
+            schema, _integer_as_string = infer_bq_schema_from_csv(
                 csv_path,
                 field_delimiter=delimiter,
                 skip_header=True,
@@ -64,7 +64,7 @@ class InferSchemaTests(unittest.TestCase):
     def test_semicolon_csv_infers_typed_columns(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_semicolon.csv"
         delimiter = detect_field_delimiter(csv_path)
-        schema = infer_bq_schema_from_csv(
+        schema, _integer_as_string = infer_bq_schema_from_csv(
             csv_path,
             field_delimiter=delimiter,
             skip_header=True,
@@ -88,7 +88,7 @@ class InferSchemaTests(unittest.TestCase):
     def test_comma_csv_infers_typed_columns(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_comma.csv"
         delimiter = detect_field_delimiter(csv_path)
-        schema = infer_bq_schema_from_csv(
+        schema, _integer_as_string = infer_bq_schema_from_csv(
             csv_path,
             field_delimiter=delimiter,
             skip_header=True,
@@ -117,7 +117,7 @@ class InferSchemaTests(unittest.TestCase):
             csv_path = Path(handle.name)
 
         try:
-            schema = infer_bq_schema_from_csv(
+            schema, _integer_as_string = infer_bq_schema_from_csv(
                 csv_path,
                 field_delimiter=",",
                 skip_header=True,
@@ -125,6 +125,36 @@ class InferSchemaTests(unittest.TestCase):
             types = {field.name: field.field_type for field in schema}
             self.assertEqual(types["id"], "INTEGER")
             self.assertEqual(types["mixed"], "STRING")
+            self.assertEqual(_integer_as_string, [])
+        finally:
+            csv_path.unlink(missing_ok=True)
+
+    def test_unsafe_integer_column_falls_back_to_string(self) -> None:
+        with tempfile.NamedTemporaryFile("w", suffix=".csv", delete=False) as handle:
+            handle.write("id,score\n")
+            handle.write("507668000053010863,1\n")
+            handle.write("415416E+17,2\n")
+            csv_path = Path(handle.name)
+
+        try:
+            schema, integer_as_string = infer_bq_schema_from_csv(
+                csv_path,
+                field_delimiter=",",
+                skip_header=True,
+            )
+            types = {field.name: field.field_type for field in schema}
+            self.assertEqual(types["id"], "STRING")
+            self.assertEqual(types["score"], "INTEGER")
+            self.assertEqual(integer_as_string, ["id"])
+
+            dataframe = read_csv_dataframe(
+                csv_path,
+                field_delimiter=",",
+                skip_header=True,
+            )
+            prepared = format_dataframe_for_bq_load(dataframe, schema)
+            self.assertEqual(prepared.loc[0, "id"], "507668000053010863")
+            self.assertEqual(prepared.loc[1, "id"], "415416E+17")
         finally:
             csv_path.unlink(missing_ok=True)
 
@@ -143,7 +173,7 @@ class InferSchemaTests(unittest.TestCase):
     def test_timestamp_values_are_normalized_for_bq_load(self) -> None:
         csv_path = Path(__file__).resolve().parent / "test_semicolon.csv"
         delimiter = detect_field_delimiter(csv_path)
-        schema = infer_bq_schema_from_csv(
+        schema, _integer_as_string = infer_bq_schema_from_csv(
             csv_path,
             field_delimiter=delimiter,
             skip_header=True,

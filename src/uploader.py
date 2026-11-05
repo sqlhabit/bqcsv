@@ -99,7 +99,7 @@ def upload_csv(
     skip_header: bool = True,
     schema_path: Path | None = None,
     on_log: Callable[[str], None] | None = None,
-) -> None:
+) -> list[str]:
     ensure_bq_available()
     if not csv_path.is_file():
         raise UploadError(f"CSV file not found: {csv_path}")
@@ -130,17 +130,24 @@ def upload_csv(
                     ) from exc
                 column_names = [field.name for field in existing_table.schema]
 
+        integer_as_string: list[str] = []
         if explicit_schema is not None:
             csv_schema = explicit_schema
             _log(on_log, f"Using schema from {schema_path}")
         else:
-            csv_schema = infer_bq_schema_from_csv(
+            csv_schema, integer_as_string = infer_bq_schema_from_csv(
                 csv_path,
                 field_delimiter=field_delimiter,
                 skip_header=skip_header,
                 column_names=column_names,
             )
             _log(on_log, f"Inferred schema: [{format_schema(csv_schema)}]")
+            if integer_as_string:
+                _log(
+                    on_log,
+                    "Using STRING for columns that cannot be safely cast to INT64: "
+                    + ", ".join(integer_as_string),
+                )
 
         load_schema = ensure_table_exists(
             client,
@@ -189,5 +196,6 @@ def upload_csv(
         finally:
             temp_schema_path.unlink(missing_ok=True)
             prepared_csv_path.unlink(missing_ok=True)
+        return integer_as_string
     except (SchemaError, TableError) as exc:
         raise UploadError(str(exc)) from exc

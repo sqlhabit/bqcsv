@@ -87,9 +87,20 @@ def resolve_table_name(
     return table_name_from_filename(csv_path.expanduser().resolve().stem)
 
 
-def build_sample_query(*, project: str | None, dataset: str, table: str) -> str:
+def build_sample_query(
+    *,
+    project: str | None,
+    dataset: str,
+    table: str,
+    integer_as_string: list[str] | None = None,
+) -> str:
     final_table_name = table_id(project=project, dataset=dataset, table=table)
-    return f"SELECT *\nFROM {final_table_name}\nLIMIT 500"
+    if not integer_as_string:
+        return f"SELECT *\nFROM {final_table_name}\nLIMIT 500"
+    casts = "\n".join(
+        f"  -- CAST({column} AS INT64) AS {column}" for column in integer_as_string
+    )
+    return f"SELECT\n  *\n{casts}\nFROM {final_table_name}\nLIMIT 500"
 
 
 def _emit_upload_result(
@@ -143,7 +154,7 @@ def _run_upload(argv: list[str]) -> int:
         return 2
 
     try:
-        upload_csv(
+        integer_as_string = upload_csv(
             csv_path,
             project=project,
             dataset=dataset,
@@ -160,7 +171,12 @@ def _run_upload(argv: list[str]) -> int:
 
     destination = f"{project}:{dataset}.{table}" if project else f"{dataset}.{table}"
     logs.append(f"Uploaded {args.csv_path} to {destination}")
-    sample_query = build_sample_query(project=project, dataset=dataset, table=table)
+    sample_query = build_sample_query(
+        project=project,
+        dataset=dataset,
+        table=table,
+        integer_as_string=integer_as_string if isinstance(integer_as_string, list) else None,
+    )
     _emit_upload_result(
         output=args.output,
         logs=logs,
